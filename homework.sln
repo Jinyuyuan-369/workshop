@@ -1,31 +1,123 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29806.167
-MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "homework", "homework\homework.vcxproj", "{4E8B6675-1163-425A-BC9D-CBA611986776}"
-EndProject
-Global
-	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|x64 = Debug|x64
-		Debug|x86 = Debug|x86
-		Release|x64 = Release|x64
-		Release|x86 = Release|x86
-	EndGlobalSection
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4E8B6675-1163-425A-BC9D-CBA611986776}.Debug|x64.ActiveCfg = Debug|x64
-		{4E8B6675-1163-425A-BC9D-CBA611986776}.Debug|x64.Build.0 = Debug|x64
-		{4E8B6675-1163-425A-BC9D-CBA611986776}.Debug|x86.ActiveCfg = Debug|Win32
-		{4E8B6675-1163-425A-BC9D-CBA611986776}.Debug|x86.Build.0 = Debug|Win32
-		{4E8B6675-1163-425A-BC9D-CBA611986776}.Release|x64.ActiveCfg = Release|x64
-		{4E8B6675-1163-425A-BC9D-CBA611986776}.Release|x64.Build.0 = Release|x64
-		{4E8B6675-1163-425A-BC9D-CBA611986776}.Release|x86.ActiveCfg = Release|Win32
-		{4E8B6675-1163-425A-BC9D-CBA611986776}.Release|x86.Build.0 = Release|Win32
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {94414FB1-ECB2-442F-A897-C487117C1F9D}
-	EndGlobalSection
-EndGlobal
+#include <stdio.h>
+#include <stdlib.h>
+#include<string.h>
+#include <time.h>
+
+typedef struct P {
+    float hp;
+    float mp;
+    char name[16];
+    struct P* next;
+}Enemy;
+
+typedef struct {
+    int num;
+    Enemy* next;
+}EnemyLinkedList;
+
+void AddNewEnemy(EnemyLinkedList *head, Enemy* newEnemy) {
+    newEnemy->next = head->next;
+    head->next = newEnemy;
+    head->num++;
+}
+
+void RemovePlayer(EnemyLinkedList *head, Enemy* player) {
+    Enemy *p = head->next;
+    if (p == player) {
+        head->next = p->next;
+        free(p);
+        head->num--;
+        return;
+    }
+    while (p->next != player && p->next != NULL)
+        p = p->next;
+    if (p->next == player) {
+        Enemy *tmp = p->next->next;
+        free(p->next);
+        p->next = tmp;
+        head->num--;
+
+
+    }
+}
+
+Enemy* FindByName(EnemyLinkedList *head, char *name) {
+    Enemy *p = head->next;
+    while (p != NULL && strcmp(p->name, name) != 0)
+        p = p->next;
+    return p;
+}
+
+Enemy* SortByHP(Enemy *first) {
+    if (first == NULL || first->next == NULL)
+        return first;
+    Enemy *minPre = first;
+    Enemy *p = first->next;
+    while (p->next != NULL) {
+        if (p->next->hp < minPre->next->hp)
+            minPre = p;
+        p = p->next;
+    }
+    if (minPre->next->hp < first->hp) {
+        p = minPre->next;
+        minPre->next = p->next;
+        p->next = first;
+        first = p;
+        first->next = SortByHP(first->next);
+        return first;
+    }
+}
+
+void Print(EnemyLinkedList* head) {
+    Enemy* p = head->next;
+    while (p != NULL) {
+        printf("%s,%.2f,%.2f\t", p->name, p->hp, p->mp);
+        p = p->next;
+    }
+    printf("\n");
+}
+
+void Destory(EnemyLinkedList *head) {
+    Enemy* p = head->next;
+    Enemy* q = p->next;
+    while (q != NULL) {
+        q = p->next;
+        free(q);
+        p = q;
+    }
+    free(head);
+}
+
+
+int main()
+{
+    srand(time(NULL));
+    EnemyLinkedList *head = (EnemyLinkedList*)malloc(sizeof(EnemyLinkedList));
+    head->next = NULL;
+    head->num = 0;
+    int nCand = rand() % 20;
+    char *find = NULL;
+    for (int i = 0; i < 20; i++) {
+        Enemy* p = (Enemy*)malloc(sizeof(Enemy));
+        p->hp = (rand() % 101) / 100.0f;
+        p->mp = (rand() % 101) / 100.0f;
+        p->name[0] = 'A' + rand() % 26;
+        p->name[1] = 'A' + rand() % 26;
+        p->name[2] = 'A' + rand() % 26;
+        p->name[3] = 'A' + rand() % 26;
+        AddNewEnemy(head, p);
+        if (nCand == i)
+            find = p->name;
+    }
+    Print(head);
+    Enemy* p = FindByName(head, find);
+    printf("The Player found: name:%s,hp:%.2f,mp:%.2f\n", p->name, p->hp, p->mp);
+    RemovePlayer(head, p);
+    printf("Remove it from the list\n");
+    Print(head);
+    printf("Sort the list by hp\n");
+    head->next = SortByHP(head->next);
+    Print(head);
+    Destory(head);
+    return 0;
+}
